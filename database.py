@@ -52,10 +52,19 @@ try:
     ''')
 
     # Фиксируем изменения в базе данных
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,   -- Логин (должен быть уникальным)
+        password_hash VARCHAR(255) NOT NULL,    -- Зашифрованный пароль
+        salt VARCHAR(255) NOT NULL,             -- Уникальная соль для этого пользователя
+        role VARCHAR(20) DEFAULT 'admin'        -- Роль для проверки особых прав доступа
+    );
+    ''')
     conn.commit()
     
     # ВОТ ЭТОТ ОТВЕТ вы должны увидеть на экране!
-    print("Ура! Все 4 таблицы успешно созданы в PostgreSQL!")
+    print("Ура! Все 5 таблиц успешно созданы в PostgreSQL!")
 
 except Exception as error:
     # А этот ответ появится ТОЛЬКО если вы ввели неверный пароль или забыли включить pgAdmin
