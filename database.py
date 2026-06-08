@@ -61,10 +61,20 @@ try:
         role VARCHAR(20) DEFAULT 'admin'        -- Роль для проверки особых прав доступа
     );
     ''')
+    # 6. Таблица 6: Расписание матчей (связывает команды, залы и даты)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS matches (
+        id SERIAL PRIMARY KEY,
+        team_home_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,  -- Хозяева
+        team_away_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,  -- Гости
+        hall_id INTEGER REFERENCES halls(id) ON DELETE SET NULL,      -- Спортзал
+        match_date TIMESTAMP NOT NULL                                 -- Дата и время матча
+    );
+    ''')
     conn.commit()
     
     # ВОТ ЭТОТ ОТВЕТ вы должны увидеть на экране!
-    print("Ура! Все 5 таблиц успешно созданы в PostgreSQL!")
+    print("Ура! Все 6 таблиц успешно созданы в PostgreSQL!")
 
 except Exception as error:
     # А этот ответ появится ТОЛЬКО если вы ввели неверный пароль или забыли включить pgAdmin
