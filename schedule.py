@@ -1,85 +1,85 @@
 import psycopg2
 from datetime import datetime, timedelta
 
-def generate_and_save_schedule():
-    # 1. Настройки подключения к вашей PostgreSQL
-    DB_NAME = "volleyball_db"
-    DB_USER = "postgres"        
-    DB_PASSWORD = "375447340720"  # Замените на свой пароль от pgAdmin!
-    DB_HOST = "localhost"
-    DB_PORT = "5432"
+DB_CONFIG = {
+    "dbname": "volleyball_db",
+    "user": "postgres",
+    "password": "375447340720",  # Сюда впишите ваш пароль от pgAdmin!
+    "host": "localhost",
+    "port": "5432"
+}
 
+def generate_schedule():
+    """Автоматическая генерация кругового расписания по дивизионам из базы данных"""
     try:
-        conn = psycopg2.connect(
-            dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
-        )
+        conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
 
-        # 2. Достаем все команды из базы данных
-        cursor.execute("SELECT id, name FROM teams;")
-        teams = cursor.fetchall()  # Получаем список кортежей вида [(1, 'Зенит'), (2, 'Спартак')]
+        # 1. Очищаем старое расписание матчей перед пересчетом
+        cursor.execute("TRUNCATE TABLE matches RESTART IDENTITY CASCADE;")
 
-        # 3. Достаем все залы из базы данных
-        cursor.execute("SELECT id, name FROM halls;")
-        halls = cursor.fetchall()
-
-        if len(teams) < 2:
-            print("Ошибка: Для генерации расписания нужно минимум 2 команды!")
-            return
-        if not halls:
-            print("Ошибка: В базе данных нет ни одного спортивного зала!")
+        # 2. Берем список всех залов для привязки игр
+        cursor.execute("SELECT id FROM halls;")
+        hall_ids = [row[0] for row in cursor.fetchall()]
+        if not hall_ids:
+            print("Ошибка: В таблице halls нет ни одного зала!")
             return
 
-        # Если количество команд нечетное, добавляем виртуальную команду (пропуск тура)
-        if len(teams) % 2 != 0:
-            teams.append((None, "Выходной"))
+        # 3. Получаем список всех дивизионов
+        cursor.execute("SELECT id FROM divisions;")
+        division_ids = [row[0] for row in cursor.fetchall()]
 
-        num_teams = len(teams)
-        num_rounds = num_teams - 1  # Количество туров в круговой системе
-        matches_per_round = num_teams // 2
+        start_date = datetime(2026, 6, 15, 10, 0) # Начало первого тура
 
-        # Начальная дата для проведения лиги (например, со следующего дня)
-        start_date = datetime.now() + timedelta(days=1)
-        
-        print("--- СТАРТ ГЕНЕРАЦИИ РАСПИСАНИЯ ---")
-
-        # 4. Круговой алгоритм распределения (Round-robin)
-        for round_num in range(num_rounds):
-            # Игровой день для текущего тура (каждый тур — через неделю)
-            round_date = start_date + timedelta(weeks=round_num)
+        # 4. Делаем перебор по каждому дивизиону отдельно
+        for div_id in division_ids:
+            cursor.execute("SELECT id FROM teams WHERE division_id = %s ORDER BY id;", (div_id,))
+            teams = [row[0] for row in cursor.fetchall()]
             
-            for match_num in range(matches_per_round):
-                home = teams[match_num]
-                away = teams[num_teams - 1 - match_num]
+            num_teams = len(teams)
+            if num_teams < 2:
+                print(f"Дивизион ID {div_id}: недостаточно команд для генерации расписания (нужно минимум 2).")
+                continue
 
-                # Пропускаем матчи с виртуальной командой "Выходной"
-                if home[0] is not None and away[0] is not None:
-                    # Назначаем зал по кругу, используя остаток от деления
-                    hall = halls[(round_num + match_num) % len(halls)]
+            # Если количество команд нечетное, добавляем "выходной" (заглушку None)
+            if num_teams % 2 != 0:
+                teams.append(None)
+                num_teams += 1
 
-                    # Устанавливаем точное время матча (например, первый в 10:00, второй в 12:00)
-                    match_time = round_date.replace(hour=10 + (match_num * 2), minute=0, second=0, microsecond=0)
+            rounds = num_teams - 1
+            matches_per_round = num_teams // 2
 
-                    # 5. Записываем сгенерированный матч в таблицу `matches`
-                    cursor.execute('''
-                        INSERT INTO matches (team_home_id, team_away_id, hall_id, match_date)
-                        VALUES (%s, %s, %s, %s);
-                    ''', (home[0], away[0], hall[0], match_time))
+            # Круговой алгоритм Бергера (Circular Method)
+            for round_num in range(rounds):
+                # Рассчитываем дату для каждого тура (например, каждую неделю)
+                round_date = start_date + timedelta(weeks=round_num)
+                
+                for match_num in range(matches_per_round):
+                    home = teams[match_num]
+                    away = teams[num_teams - 1 - match_num]
 
-                    print(f"Тур {round_num + 1}: {home[1]} vs {away[1]} | Зал: {hall[1]} | Дата: {match_time.strftime('%Y-%m-%d %H:%M')}")
+                    # Если одна из команд None — это выходной тур для соперника, матч не создается
+                    if home is not None and away is not None:
+                        # Распределяем время внутри одного дня игр (10:00, 12:00 и т.д.)
+                        match_time = round_date + timedelta(hours=(match_num * 2))
+                        # Берем зал по очереди
+                        assigned_hall = hall_ids[match_num % len(hall_ids)]
 
-            # Сдвигаем команды по кругу для следующего тура (первая команда остается на месте)
-            teams = [teams[0]] + [teams[-1]] + teams[1:-1]
+                        # Записываем сгенерированный матч в PostgreSQL
+                        cursor.execute('''
+                            INSERT INTO matches (match_date, team_home_id, team_away_id, hall_id)
+                            VALUES (%s, %s, %s, %s);
+                        ''', (match_time, home, away, assigned_hall))
 
-        # Сохраняем все добавленные матчи в PostgreSQL
+            # Сдвигаем начало игр для следующего дивизиона на вечер или другой день
+            start_date += timedelta(hours=4)
+
         conn.commit()
-        print("--- РАСПИСАНИЕ УСПЕШНО СГЕНЕРИРОВАНО И ЗАПИСАНО В БД ---")
-
-    except Exception as error:
-        print(f"Ошибка алгоритма: {error}")
+        print("=== КАРТА РАСПИСАНИЯ ПОЛНОСТЬЮ И УСПЕШНО ОБНОВЛЕНА ===")
+    except Exception as e:
+        print(f"Ошибка генерации в schedule.py: {e}")
     finally:
-        if 'cursor' in locals(): cursor.close()
         if 'conn' in locals(): conn.close()
 
 if __name__ == "__main__":
-    generate_and_save_schedule()
+    generate_schedule()
