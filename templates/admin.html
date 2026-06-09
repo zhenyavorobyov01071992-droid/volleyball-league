@@ -20,7 +20,7 @@
             justify-content: space-between;
             align-items: center;
             border-radius: 8px;
-            max-width: 1200px;
+            max-width: 1386px;
             margin: 0 auto 30px auto;
         }
 
@@ -34,27 +34,32 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1386px;
             margin: 0 auto;
             display: flex;
             gap: 40px;
         }
 
-        .form-block {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            width: 350px;
-            height: fit-content;
+        .left-column {
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
         }
 
+        .right-column {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 35px;
+        }
+
+        .form-block,
         .table-block {
             background: white;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            flex-grow: 1;
         }
 
         h3 {
@@ -85,7 +90,6 @@
         }
 
         .btn-add {
-            background: #2ecc71;
             color: white;
             border: none;
             padding: 10px;
@@ -95,14 +99,27 @@
             cursor: pointer;
         }
 
-        .btn-add:hover {
+        .btn-player {
+            background: #2ecc71;
+        }
+
+        .btn-player:hover {
             background: #27ae60;
+        }
+
+        .btn-team {
+            background: #3498db;
+        }
+
+        .btn-team:hover {
+            background: #2980b9;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
+            background: white;
         }
 
         th,
@@ -135,64 +152,117 @@
 
 <body>
 
-    <!-- Шапка админки -->
     <div class="admin-header">
-        <h2>Управление Лигой (Администратор)</h2>
+        <h2>Управление Волейбольной Лигой</h2>
         <a href="/logout" class="btn-logout">Выйти из системы</a>
     </div>
 
     <div class="container">
-        <!-- Блок добавления нового игрока -->
-        <div class="form-block">
-            <h3>Добавить игрока</h3>
-            <form method="POST" action="/admin/add_player">
-                <div class="form-group">
-                    <label for="first_name">Имя</label>
-                    <input type="text" id="first_name" name="first_name" required placeholder="Иван">
-                </div>
-                <div class="form-group">
-                    <label for="last_name">Фамилия</label>
-                    <input type="text" id="last_name" name="last_name" required placeholder="Петров">
-                </div>
-                <div class="form-group">
-                    <label for="team_id">Команда</label>
-                    <select id="team_id" name="team_id" required>
-                        {% for team in teams %}
-                        <option value="{{ team[0] }}">{{ team[1] }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <button type="submit" class="btn-add">Сохранить игрока</button>
-            </form>
+        <!-- ЛЕВАЯ КОЛОНКА: ФОРМЫ ДОБАВЛЕНИЯ -->
+        <div class="left-column">
+            <!-- Форма игрока -->
+            <div class="form-block">
+                <h3>Добавить игрока</h3>
+                <form method="POST" action="/admin/add_player">
+                    <div class="form-group">
+                        <label for="first_name">Имя игрока</label>
+                        <input type="text" id="first_name" name="first_name" required placeholder="Иван">
+                    </div>
+                    <div class="form-group">
+                        <label for="last_name">Фамилия игрока</label>
+                        <input type="text" id="last_name" name="last_name" required placeholder="Петров">
+                    </div>
+                    <div class="form-group">
+                        <label for="team_id">Команда</label>
+                        <select id="team_id" name="team_id" required>
+                            {% for team in teams %}
+                            <option value="{{ team[0] }}">{{ team[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-add btn-player">Сохранить игрока</button>
+                </form>
+            </div>
+
+            <!-- Форма команды -->
+            <div class="form-block">
+                <h3>Добавить команду</h3>
+                <form method="POST" action="/admin/add_team">
+                    <div class="form-group">
+                        <label for="team_name">Название команды</label>
+                        <input type="text" id="team_name" name="team_name" required placeholder="Шахтер">
+                    </div>
+                    <div class="form-group">
+                        <label for="division_id">Дивизион</label>
+                        <select id="division_id" name="division_id" required>
+                            {% for div in divisions %}
+                            <option value="{{ div[0] }}">{{ div[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-add btn-team">Создать команду</button>
+                </form>
+            </div>
         </div>
 
-        <!-- Таблица со списком всех игроков лиги -->
-        <div class="table-block">
-            <h3>Список зарегистрированных игроков</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Имя Фамилия</th>
-                        <th>Команда</th>
-                        <th>Действие</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for player in players %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ player[1] }} {{ player[2] }}</td>
-                        <td>{{ player[3] }}</td>
-                        <td>
-                            <!-- Ссылка отправляет ID игрока на удаление -->
-                            <a href="/admin/delete_player/{{ player[0] }}" class="btn-delete"
-                                onclick="return confirm('Вы уверены, что хотите удалить игрока?')">Удалить</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- ПРАВАЯ КОЛОНКА: ТАБЛИЦЫ СПИСКОВ -->
+        <div class="right-column">
+            <!-- Table игроков -->
+            <div class="table-block">
+                <h3>Список игроков лиги</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя Фамилия</th>
+                            <th>Команда</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in players %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ player[1] }} {{ player[2] }}</td>
+                            <td>{{ player[3] }}</td>
+                            <td>
+                                <a href="/admin/delete_player/{{ player[0] }}" class="btn-delete"
+                                    onclick="return confirm('Удалить игрока?')">Удалить</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Table команд -->
+            <div class="table-block">
+                <h3>Список команд лиги</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Команда</th>
+                            <th>Дивизион</th>
+                            <th>Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for team in teams %}
+                        <tr>
+                            <!-- Идеальная нумерация по порядку строк (1, 2, 3...) -->
+                            <td>{{ loop.index }}</td>
+                            <td>{{ team[1] }}</td>
+                            <td>{{ team[2] }}</td>
+                            <td>
+                                <a href="/admin/delete_team/{{ team[0] }}" class="btn-delete"
+                                    onclick="return confirm('Удалить команду?')">Удалить</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

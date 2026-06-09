@@ -24,11 +24,18 @@ def get_schedule_from_db():
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT m.id, m.match_date, t1.name, t2.name, h.name
+            SELECT 
+                m.id,
+                m.match_date,
+                t1.name AS home_team,
+                t2.name AS away_team,
+                h.name AS hall_name,
+                d.name AS division_name
             FROM matches m
             JOIN teams t1 ON m.team_home_id = t1.id
             JOIN teams t2 ON m.team_away_id = t2.id
             JOIN halls h ON m.hall_id = h.id
+            JOIN divisions d ON t1.division_id = d.id
             ORDER BY m.match_date ASC;
         ''')
         return cursor.fetchall()
@@ -123,7 +130,6 @@ def login_page():
 
 @app.route('/admin')
 def admin_dashboard():
-    # Защита страницы: если в сессии нет метки админа, выгоняем на форму входа
     if not session.get('admin_logged_in'):
         return redirect(url_for('login_page'))
         
@@ -131,7 +137,7 @@ def admin_dashboard():
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
         
-        # 1. Загружаем список игроков со связанными именами команд из PostgreSQL
+        # 1. Список игроков
         cursor.execute('''
             SELECT p.id, p.first_name, p.last_name, t.name 
             FROM players p
@@ -140,12 +146,20 @@ def admin_dashboard():
         ''')
         db_players = cursor.fetchall()
         
-        # 2. Загружаем список всех команд для выпадающего списка формы добавления
-        cursor.execute("SELECT id, name FROM teams ORDER BY name ASC;")
+        # 2. Список команд с их дивизионами (для таблицы админки)
+        cursor.execute('''
+            SELECT t.id, t.name, d.name 
+            FROM teams t
+            JOIN divisions d ON t.division_id = d.id
+            ORDER BY t.id DESC;
+        ''')
         db_teams = cursor.fetchall()
         
-        # Передаем данные в наш новый HTML-шаблон admin.html
-        return render_template('admin.html', players=db_players, teams=db_teams)
+        # 3. Список дивизионов (для выпадающего меню новой команды)
+        cursor.execute("SELECT id, name FROM divisions ORDER BY id ASC;")
+        db_divisions = cursor.fetchall()
+        
+        return render_template('admin.html', players=db_players, teams=db_teams, divisions=db_divisions)
     except Exception as e:
         return f"Ошибка загрузки админ-панели: {e}"
     finally:
@@ -153,60 +167,87 @@ def admin_dashboard():
 
 @app.route('/admin/add_player', methods=['POST'])
 def add_player():
-    # Защита действия: проверяем сессию
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('login_page'))
-        
+    if not session.get('admin_logged_in'): return redirect(url_for('login_page'))
     try:
-        # Считываем текстовые данные, которые админ ввёл в форму
         f_name = request.form['first_name']
         l_name = request.form['last_name']
-        t_id = request.form['team_id']
-        
+        t_id = int(request.form['team_id'])
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
-        # Записываем нового волейболиста в PostgreSQL
-        cursor.execute(
-            "INSERT INTO players (first_name, last_name, team_id) VALUES (%s, %s, %s);",
-            (f_name, l_name, t_id)
-        )
+        cursor.execute("INSERT INTO players (first_name, last_name, team_id) VALUES (%s, %s, %s);", (f_name, l_name, t_id))
         conn.commit()
-    except Exception as e:
-        print(f"Ошибка добавления игрока: {e}")
+    except Exception as e: print(f"Ошибка игрока: {e}")
     finally:
         if 'conn' in locals(): conn.close()
-        
-    # После сохранения автоматически перезагружаем админку, чтобы увидеть изменения
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/delete_player/<int:player_id>')
 def delete_player(player_id):
-    # Защита действия: проверяем сессию
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('login_page'))
-        
+    if not session.get('admin_logged_in'): return redirect(url_for('login_page'))
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
-        # Удаляем игрока из PostgreSQL по его уникальному ID-номеру
         cursor.execute("DELETE FROM players WHERE id = %s;", (player_id,))
         conn.commit()
-    except Exception as e:
-        print(f"Ошибка удаления игрока: {e}")
+    except Exception as e: print(f"Ошибка удаления игрока: {e}")
     finally:
         if 'conn' in locals(): conn.close()
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/add_team', methods=['POST'])
+def add_team():
+    if not session.get('admin_logged_in'): return redirect(url_for('login_page'))
+    try:
+        t_name = request.form['team_name']
+        d_id = int(request.form['division_id'])
         
-    # После удаления возвращаем администратора обратно в панель
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        
+        # 1. Записываем новую команду в базу данных
+        cursor.execute("INSERT INTO teams (name, division_id) VALUES (%s, %s);", (t_name, d_id))
+        conn.commit()
+        
+        # 2. АВТОМАТИЗАЦИЯ: Запускаем пересчет календаря расписания
+        # Скрипт schedule.py должен содержать метод генерации
+        try:
+            import schedule
+            schedule.generate_schedule() # Запуск вашего кругового алгоритма из прошлых шагов
+            print("--- РАСПИСАНИЕ МАТЧЕЙ УСПЕШНО ПЕРЕСЧИТАНО ---")
+        except Exception as se:
+            print(f"Ошибка автоматического пересчета расклада: {se}")
+            
+    except Exception as e: print(f"Ошибка создания команды: {e}")
+    finally:
+        if 'conn' in locals(): conn.close()
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/delete_team/<int:team_id>')
+def delete_team(team_id):
+    if not session.get('admin_logged_in'): return redirect(url_for('login_page'))
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        # Удаляем команду (при этом в PostgreSQL должно стоять CASCADE для матчей этой команды)
+        cursor.execute("DELETE FROM teams WHERE id = %s;", (team_id,))
+        conn.commit()
+        
+        # Пересчитываем расклад после удаления
+        try:
+            import schedule
+            schedule.generate_schedule()
+        except: pass
+    except Exception as e: print(f"Ошибка удаления команды: {e}")
+    finally:
+        if 'conn' in locals(): conn.close()
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/logout')
 def logout():
-    # Очищаем сессию (удаляем цифровой паспорт админа) и выходим из системы
     session.clear()
     return redirect(url_for('home_page'))
 
-
-# --- И ТОЛЬКО В САМОМ КОНЦЕ ФАЙЛА ЗАПУСКАЕТСЯ СЕРВЕР ---
 if __name__ == "__main__":
     app.run(debug=True)
+
 
