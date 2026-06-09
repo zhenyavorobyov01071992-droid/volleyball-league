@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Панель администратора</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: #f4f4f9;
+        }
+
+        .admin-header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px;
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+        }
+
+        .btn-logout {
+            background: #e74c3c;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 40px;
+        }
+
+        .form-block {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            width: 350px;
+            height: fit-content;
+        }
+
+        .table-block {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            flex-grow: 1;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .btn-add {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-add:hover {
+            background: #27ae60;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            border: 1px solid #eee;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #34495e;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            color: white;
+            padding: 6px 12px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .btn-delete:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Шапка админки -->
+    <div class="admin-header">
+        <h2>Управление Лигой (Администратор)</h2>
+        <a href="/logout" class="btn-logout">Выйти из системы</a>
+    </div>
+
+    <div class="container">
+        <!-- Блок добавления нового игрока -->
+        <div class="form-block">
+            <h3>Добавить игрока</h3>
+            <form method="POST" action="/admin/add_player">
+                <div class="form-group">
+                    <label for="first_name">Имя</label>
+                    <input type="text" id="first_name" name="first_name" required placeholder="Иван">
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Фамилия</label>
+                    <input type="text" id="last_name" name="last_name" required placeholder="Петров">
+                </div>
+                <div class="form-group">
+                    <label for="team_id">Команда</label>
+                    <select id="team_id" name="team_id" required>
+                        {% for team in teams %}
+                        <option value="{{ team[0] }}">{{ team[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-add">Сохранить игрока</button>
+            </form>
+        </div>
+
+        <!-- Таблица со списком всех игроков лиги -->
+        <div class="table-block">
+            <h3>Список зарегистрированных игроков</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Имя Фамилия</th>
+                        <th>Команда</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in players %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ player[1] }} {{ player[2] }}</td>
+                        <td>{{ player[3] }}</td>
+                        <td>
+                            <!-- Ссылка отправляет ID игрока на удаление -->
+                            <a href="/admin/delete_player/{{ player[0] }}" class="btn-delete"
+                                onclick="return confirm('Вы уверены, что хотите удалить игрока?')">Удалить</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+
+</html>
