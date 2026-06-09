@@ -123,59 +123,90 @@ def login_page():
 
 @app.route('/admin')
 def admin_dashboard():
-    # Защита страницы: если в сессии нет метки админа, выгоняем его на форму входа
+    # Защита страницы: если в сессии нет метки админа, выгоняем на форму входа
     if not session.get('admin_logged_in'):
         return redirect(url_for('login_page'))
         
-    # Секретная страница админки (Этап 6, пункт 3)
-    return "<h1>Добро пожаловать в скрытую админку! Тут вы сможете редактировать игроков.</h1><a href='/logout'>Выйти из системы</a>"
-
-@app.route('/logout')
-def logout():
-    # Очищаем сессию (удаляем "паспорт" админа) и выходим из системы
-    session.clear()
-    return redirect(url_for('home_page'))
-
-
-# --- Этот маршрут должен быть ВЫШЕ, чем запуск сервера! ---
-@app.route('/create_admin_fix')
-def create_admin_fix():
-    """Временный маршрут для создания админа с автоматическим определением колонок"""
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
         
-        # 1. Генерируем хэш и соль для слова "admin" строго через ваш файл auth.py
-        new_hash, new_salt = auth.hash_password("admin")
+        # 1. Загружаем список игроков со связанными именами команд из PostgreSQL
+        cursor.execute('''
+            SELECT p.id, p.first_name, p.last_name, t.name 
+            FROM players p
+            JOIN teams t ON p.team_id = t.id
+            ORDER BY p.id DESC;
+        ''')
+        db_players = cursor.fetchall()
         
-        # 2. Очищаем таблицу users
-        cursor.execute("TRUNCATE TABLE users RESTART IDENTITY CASCADE;")
+        # 2. Загружаем список всех команд для выпадающего списка формы добавления
+        cursor.execute("SELECT id, name FROM teams ORDER BY name ASC;")
+        db_teams = cursor.fetchall()
         
-        # 3. Пытаемся записать через колонку 'username'
-        try:
-            cursor.execute(
-                "INSERT INTO users (username, password_hash, salt) VALUES (%s, %s, %s);",
-                ("admin", new_hash, new_salt)
-            )
-            conn.commit()
-            return "<h3>Администратор успешно создан!</h3><p>Использована колонка: <b>username</b></p><a href='/login'>Перейти ко входу</a>"
-        except Exception:
-            conn.rollback()
-            # 4. Если не вышло, записываем через альтернативную колонку 'login'
-            cursor.execute(
-                "INSERT INTO users (login, password_hash, salt) VALUES (%s, %s, %s);",
-                ("admin", new_hash, new_salt)
-            )
-            conn.commit()
-            return "<h3>Администратор успешно создан!</h3><p>Использована колонка: <b>login</b></p><a href='/login'>Перейти ко входу</a>"
-            
+        # Передаем данные в наш новый HTML-шаблон admin.html
+        return render_template('admin.html', players=db_players, teams=db_teams)
     except Exception as e:
-        return f"<h3>Критическая ошибка генерации:</h3><p>{e}</p>"
+        return f"Ошибка загрузки админ-панели: {e}"
     finally:
         if 'conn' in locals(): conn.close()
 
+@app.route('/admin/add_player', methods=['POST'])
+def add_player():
+    # Защита действия: проверяем сессию
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login_page'))
+        
+    try:
+        # Считываем текстовые данные, которые админ ввёл в форму
+        f_name = request.form['first_name']
+        l_name = request.form['last_name']
+        t_id = request.form['team_id']
+        
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        # Записываем нового волейболиста в PostgreSQL
+        cursor.execute(
+            "INSERT INTO players (first_name, last_name, team_id) VALUES (%s, %s, %s);",
+            (f_name, l_name, t_id)
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"Ошибка добавления игрока: {e}")
+    finally:
+        if 'conn' in locals(): conn.close()
+        
+    # После сохранения автоматически перезагружаем админку, чтобы увидеть изменения
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/delete_player/<int:player_id>')
+def delete_player(player_id):
+    # Защита действия: проверяем сессию
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('login_page'))
+        
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor()
+        # Удаляем игрока из PostgreSQL по его уникальному ID-номеру
+        cursor.execute("DELETE FROM players WHERE id = %s;", (player_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"Ошибка удаления игрока: {e}")
+    finally:
+        if 'conn' in locals(): conn.close()
+        
+    # После удаления возвращаем администратора обратно в панель
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/logout')
+def logout():
+    # Очищаем сессию (удаляем цифровой паспорт админа) и выходим из системы
+    session.clear()
+    return redirect(url_for('home_page'))
 
 
 # --- И ТОЛЬКО В САМОМ КОНЦЕ ФАЙЛА ЗАПУСКАЕТСЯ СЕРВЕР ---
 if __name__ == "__main__":
     app.run(debug=True)
+
