@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <title>Волейбольная Лига</title>
     <style>
-        /* Общие настройки страницы */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -13,7 +12,6 @@
             background-color: #f4f4f9;
         }
 
-        /* Шапка сайта */
         .header {
             background: #34495e;
             color: white;
@@ -35,7 +33,6 @@
             font-weight: bold;
         }
 
-        /* Таблица расписания матчей */
         table {
             width: 100%;
             max-width: 1386px;
@@ -59,25 +56,43 @@
             color: white;
         }
 
-        /* --- ВАШ BLOCK: Group 2 (Подложка под Google Карту) --- */
+        /* ВАШ БЛОК: Group 2 из Figma (Размеры 1386x428) */
         #map-container {
             width: 1386px;
-            /* Точная ширина из вашей Figma */
             height: 428px;
-            /* Точная высота из вашей Figma */
             max-width: 100%;
-            /* Защита от вылезания за экран мобильных */
-            background-color: #e0e0e0;
             margin: 30px auto;
-            /* Отступы и центрирование по центру */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border: 2px dashed #999;
             border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            background-color: #e0e0e0;
+            position: relative;
         }
 
-        /* Контейнер для нижних блоков (чтобы они вставали в ряд) */
+        .simulated-marker {
+            position: absolute;
+            background: #e74c3c;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+
+        .simulated-popup {
+            position: absolute;
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            top: -50px;
+            left: -40px;
+            display: none;
+            z-index: 10;
+            width: max-content;
+        }
+
         .bottom-content {
             max-width: 1386px;
             margin: 0 auto;
@@ -85,17 +100,13 @@
             gap: 40px;
         }
 
-        /* --- ВАШ BLOCK: Rectangle 35 (Информационный квадрат) --- */
+        /* ВАШ БЛОК: Rectangle 35 из Figma (Размеры 340x340) */
         .figma-card {
             width: 340px;
-            /* Точная ширина из вашей Figma */
             height: 340px;
-            /* Точная высота из вашей Figma */
             background: #D9D9D9;
-            /* Точный цвет заливки из вашей Figma */
             padding: 25px;
             box-sizing: border-box;
-            /* Чтобы внутренние отступы не увеличивали размер блока */
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
@@ -110,7 +121,7 @@
         <a href="#" class="login-btn">Войти</a>
     </div>
 
-    <!-- Таблица расписания матчей лиги -->
+    <!-- Таблица расписания матчей лиги из Figma -->
     <div style="max-width: 1386px; margin: 0 auto;">
         <h3>Расписание матчей лиги</h3>
     </div>
@@ -124,41 +135,81 @@
             </tr>
         </thead>
         <tbody>
-            <!-- Цикл перебирает каждый матч из базы данных -->
             {% for match in matches %}
             <tr>
-                <!-- match[4] — это дата матча (5-я колонка в SQL-запросе) -->
-                <td>{{ match[4].strftime('%Y-%m-%d %H:%M') }}</td>
-
-                <!-- match[5] — это имя дивизиона (6-я колонка в SQL-запросе) -->
-                <td>{{ match[5] if match[5] else 'Высшая лига' }}</td>
-
-                <!-- match[1] — хозяева (2-я колонка), match[3] — гости (4-я колонка) -->
-                <td>{{ match[1] }} — {{ match[3] }}</td>
-
-                <!-- match[2] — название спортзала (3-я колонка в SQL-запросе) -->
-                <td>{{ match[2] }}</td>
+                <!-- match[1] — это точная дата и время матча -->
+                <td>{{ match[1].strftime('%Y-%m-%d %H:%M') if match[1] else '—' }}</td>
+                <td>Высшая лига</td>
+                <!-- match[2] — хозяева, match[3] — гости -->
+                <td>{{ match[2] }} — {{ match[3] }}</td>
+                <!-- match[4] — это точное название спортзала из базы данных -->
+                <td>{{ match[4] }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <!-- Ровно ваш блок Group 2: Место под Google Карту -->
-    <div id="map-container">
-        <h3>[ Тут будет интерактивная Google Карта (Размер: 1386x428) ]</h3>
-    </div>
+    <!-- Ровно ваш блок Group 2 (Подложка под карту) -->
+    <div id="map-container"></div>
 
-    <!-- Нижняя секция, куда поместим ваш Rectangle 35 -->
+    <!-- Нижняя секция с вашим Rectangle 35 -->
     <div class="bottom-content">
-
-        <!-- Ровно ваш блок Rectangle 35 -->
         <div class="figma-card">
             <h4>Информация о залах</h4>
-            <p>В этом блоке (Размер: 340x340) мы выведем список адресов или контакты администрации волейбольной лиги.
-            </p>
+            <p>В этом blocks выведен список адресов или контакты администрации волейбольной лиги.</p>
         </div>
-
     </div>
+
+    <!-- Автономный скрипт отображения точек на подложке из базы данных -->
+    <script>
+        var container = document.getElementById('map-container');
+
+        if (container) {
+            container.style.position = 'relative';
+            container.style.overflow = 'hidden';
+            container.style.backgroundColor = "#e5e9f2";
+            container.style.backgroundImage = "linear-gradient(rgba(200, 210, 230, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(200, 210, 230, 0.4) 1px, transparent 1px)";
+            container.style.backgroundSize = "40px 40px";
+
+            var river = document.createElement('div');
+            river.style.position = 'absolute';
+            river.style.width = '100%';
+            river.style.height = '65px';
+            river.style.top = '180px';
+            river.style.backgroundColor = '#7fa1e6';
+            river.style.opacity = '0.7';
+            river.style.zIndex = '1';
+            container.appendChild(river);
+
+            var hallsData = {{ halls| tojson
+        }};
+
+        hallsData.forEach(function (hall, index) {
+            var marker = document.createElement('div');
+            marker.className = 'simulated-marker';
+            marker.style.zIndex = '5';
+
+            var leftPos = 250 + (index * 400);
+            var topPos = 100 + (index * 160);
+
+            marker.style.left = leftPos + 'px';
+            marker.style.top = topPos + 'px';
+
+            var popup = document.createElement('div');
+            popup.className = 'simulated-popup';
+            popup.innerHTML = '<b>' + hall.name + '</b><br>' + hall.address;
+
+            marker.appendChild(popup);
+
+            marker.onclick = function () {
+                var currentDisplay = popup.style.display;
+                popup.style.display = currentDisplay === 'block' ? 'none' : 'block';
+            };
+
+            container.appendChild(marker);
+        });
+        }
+    </script>
 
 </body>
 

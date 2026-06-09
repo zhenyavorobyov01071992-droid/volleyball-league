@@ -13,11 +13,11 @@ DB_CONFIG = {
 }
 
 def get_schedule_from_db():
-    """Выгрузка расписания матчей с полной распаковкой связей таблиц (5 колонок)"""
+    """Выгрузка расписания матчей (Строго 5 колонок)"""
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
-        # Этот запрос строго собирает: ID(0), Дату(1), Хозяев(2), Гостей(3) и Зал(4)
+        # Порядок в ответе: ID(0), Дата(1), Хозяева(2), Гостей(3), Зал(4)
         cursor.execute('''
             SELECT 
                 m.id,
@@ -33,13 +33,13 @@ def get_schedule_from_db():
         ''')
         return cursor.fetchall()
     except Exception as e:
-        print(f"--- КРИТИЧЕСКАЯ ОШИБКА БАЗЫ ДАННЫХ (МАТЧИ) ---: {e}")
+        print(f"Ошибка БД матчей: {e}")
         return []
     finally:
         if 'conn' in locals(): conn.close()
 
 def get_halls_from_db():
-    """Выгрузка всех спортзалов с координатами для нашей автономной карты"""
+    """Выгрузка всех спортзалов для нашей автономной карты"""
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
@@ -48,14 +48,14 @@ def get_halls_from_db():
         halls = []
         for row in rows:
             halls.append({
-                "name": row[0],
-                "address": row[1],
-                "lat": float(row[2]),
-                "lng": float(row[3])
+                "name": row[0],     # Название зала
+                "address": row[1],  # Физический адрес
+                "lat": float(row[2]), # Широта (latitude)
+                "lng": float(row[3])  # Долгота (longitude)
             })
         return halls
     except Exception as e:
-        print(f"--- КРИТИЧЕСКАЯ ОШИБКА БАЗЫ ДАННЫХ (ЗАЛЫ) ---: {e}")
+        print(f"Ошибка БД залов: {e}")
         return []
     finally:
         if 'conn' in locals(): conn.close()
@@ -68,4 +68,3 @@ def home_page():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
