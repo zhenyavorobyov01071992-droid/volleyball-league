@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Волейбольная Лига</title>
+    <style>
+        /* Общие настройки страницы */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: #f4f4f9;
+        }
+
+        /* Шапка сайта */
+        .header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px;
+            max-width: 1386px;
+            margin: 0 auto 30px auto;
+        }
+
+        .login-btn {
+            background: #e74c3c;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        /* Таблица расписания матчей */
+        table {
+            width: 100%;
+            max-width: 1386px;
+            border-collapse: collapse;
+            margin: 20px auto 40px auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #2c3e50;
+            color: white;
+        }
+
+        /* --- ВАШ BLOCK: Group 2 (Подложка под Google Карту) --- */
+        #map-container {
+            width: 1386px;
+            /* Точная ширина из вашей Figma */
+            height: 428px;
+            /* Точная высота из вашей Figma */
+            max-width: 100%;
+            /* Защита от вылезания за экран мобильных */
+            background-color: #e0e0e0;
+            margin: 30px auto;
+            /* Отступы и центрирование по центру */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed #999;
+            border-radius: 8px;
+        }
+
+        /* Контейнер для нижних блоков (чтобы они вставали в ряд) */
+        .bottom-content {
+            max-width: 1386px;
+            margin: 0 auto;
+            display: flex;
+            gap: 40px;
+        }
+
+        /* --- ВАШ BLOCK: Rectangle 35 (Информационный квадрат) --- */
+        .figma-card {
+            width: 340px;
+            /* Точная ширина из вашей Figma */
+            height: 340px;
+            /* Точная высота из вашей Figma */
+            background: #D9D9D9;
+            /* Точный цвет заливки из вашей Figma */
+            padding: 25px;
+            box-sizing: border-box;
+            /* Чтобы внутренние отступы не увеличивали размер блока */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Шапка сайта -->
+    <div class="header">
+        <h2>Волейбольная Лига</h2>
+        <a href="#" class="login-btn">Войти</a>
+    </div>
+
+    <!-- Таблица расписания матчей лиги -->
+    <div style="max-width: 1386px; margin: 0 auto;">
+        <h3>Расписание матчей лиги</h3>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Дата и время</th>
+                <th>Дивизион</th>
+                <th>Матч</th>
+                <th>Спортзал</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Цикл перебирает каждый матч из базы данных -->
+            {% for match in matches %}
+            <tr>
+                <!-- match[4] — это дата матча (5-я колонка в SQL-запросе) -->
+                <td>{{ match[4].strftime('%Y-%m-%d %H:%M') }}</td>
+
+                <!-- match[5] — это имя дивизиона (6-я колонка в SQL-запросе) -->
+                <td>{{ match[5] if match[5] else 'Высшая лига' }}</td>
+
+                <!-- match[1] — хозяева (2-я колонка), match[3] — гости (4-я колонка) -->
+                <td>{{ match[1] }} — {{ match[3] }}</td>
+
+                <!-- match[2] — название спортзала (3-я колонка в SQL-запросе) -->
+                <td>{{ match[2] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Ровно ваш блок Group 2: Место под Google Карту -->
+    <div id="map-container">
+        <h3>[ Тут будет интерактивная Google Карта (Размер: 1386x428) ]</h3>
+    </div>
+
+    <!-- Нижняя секция, куда поместим ваш Rectangle 35 -->
+    <div class="bottom-content">
+
+        <!-- Ровно ваш блок Rectangle 35 -->
+        <div class="figma-card">
+            <h4>Информация о залах</h4>
+            <p>В этом блоке (Размер: 340x340) мы выведем список адресов или контакты администрации волейбольной лиги.
+            </p>
+        </div>
+
+    </div>
+
+</body>
+
+</html>
