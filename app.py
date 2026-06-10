@@ -10,18 +10,14 @@ app = Flask(__name__)
 app.secret_key = "super_secret_volleyball_key_123"
 
 # Финальная конфигурация подключения к вашей PostgreSQL
-DB_CONFIG = {
-    "dbname": "volleyball_db",
-    "user": "postgres",
-    "password": "375447340720",  # Сюда впишите ваш личный пароль от pgAdmin!
-    "host": "localhost",
-    "port": "5432"
-}
+# Заменяем старый словарь DB_CONFIG на прямую внешнюю ссылку из Render!
+# Вставьте сюда ВАШУ скопированную ссылку!
+DATABASE_URL = "postgresql://volleyball_db_oqjm_user:PUQZnejSQDATvlFXuiD9wNZKQxWwrCJk@dpg-d8kiqhvavr4c739i6p60-a.frankfurt-postgres.render.com/volleyball_db_oqjm"
 
 def get_schedule_from_db():
     """Выгрузка расписания матчей"""
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         cursor.execute('''
             SELECT 
@@ -48,7 +44,7 @@ def get_schedule_from_db():
 def get_halls_from_db():
     """Выгрузка всех спортзалов для карты"""
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         cursor.execute("SELECT name, address, latitude, longitude FROM halls;")
         rows = cursor.fetchall()
@@ -65,7 +61,7 @@ def get_halls_from_db():
 def verify_admin_login(username, password):
     """Финальная отладочная функция проверки логина"""
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
         cursor.execute("SELECT password_hash, salt FROM users WHERE username = %s;", (username,))
@@ -134,7 +130,7 @@ def admin_dashboard():
         return redirect(url_for('login_page'))
         
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
         # 1. Список игроков
@@ -172,7 +168,7 @@ def add_player():
         f_name = request.form['first_name']
         l_name = request.form['last_name']
         t_id = int(request.form['team_id'])
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         cursor.execute("INSERT INTO players (first_name, last_name, team_id) VALUES (%s, %s, %s);", (f_name, l_name, t_id))
         conn.commit()
@@ -185,7 +181,7 @@ def add_player():
 def delete_player(player_id):
     if not session.get('admin_logged_in'): return redirect(url_for('login_page'))
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         cursor.execute("DELETE FROM players WHERE id = %s;", (player_id,))
         conn.commit()
@@ -201,7 +197,7 @@ def add_team():
         t_name = request.form['team_name']
         d_id = int(request.form['division_id'])
         
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         
         # 1. Записываем новую команду в базу данных
@@ -226,7 +222,7 @@ def add_team():
 def delete_team(team_id):
     if not session.get('admin_logged_in'): return redirect(url_for('login_page'))
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = psycopg2.connect(DATABASE_URL)
         cursor = conn.cursor()
         # Удаляем команду (при этом в PostgreSQL должно стоять CASCADE для матчей этой команды)
         cursor.execute("DELETE FROM teams WHERE id = %s;", (team_id,))
