@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, redirect, url_for, session
 import psycopg2
 import hashlib
@@ -102,8 +103,18 @@ def verify_admin_login(username, password):
 def home_page():
     db_matches = get_schedule_from_db()
     db_halls = get_halls_from_db()
-    # Передаем в шаблон переменную session, чтобы сайт знал, вошел ли админ
-    return render_template('index.html', matches=db_matches, halls=db_halls, session=session)
+    
+    # 1. Безопасно считываем ключ карты из файла .env
+    maps_key = os.getenv('YANDEX_MAPS_KEY')
+    
+    # 2. Передаем ВСЕ данные: матчи, залы, сессию и НОВЫЙ ключ карты
+    return render_template(
+        'index.html', 
+        matches=db_matches, 
+        halls=db_halls, 
+        session=session, 
+        yandex_key=maps_key
+    )
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
