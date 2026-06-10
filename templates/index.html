@@ -3,6 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=352c9519-358a-4ded-b1a7-4572b562c9a7&lang=ru_RU"
+        type="text/javascript"></script>
     <title>Волейбольная Лига</title>
     <style>
         body {
@@ -149,16 +151,16 @@
     </table>
 
     <!-- Ровно ваш блок Group 2 (Подложка под карту) -->
-    <div id="map-container"></div>
+    <div id="map-container" style="width: 100%; height: 500px; border-radius: 8px;"></div>
 
     <!-- Нижняя секция с вашим Rectangle 35 -->
     <!-- Ровно ваш блок Rectangle 35 из Figma (Наполненный полезной информацией) -->
+    <!-- Ровно ваш блок Rectangle 35 из Figma (Синхронизирован с базой данных) -->
     <!-- Ровно ваш блок Rectangle 35 из Figma (Синхронизирован с базой данных) -->
     <div class="figma-card">
         <h4 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #34495e; padding-bottom: 5px;">Адреса
             спортзалов</h4>
         <ul style="padding-left: 20px; margin: 10px 0; font-size: 14px; line-height: 1.6; color: #333;">
-            <!-- Цикл автоматически выводит адреса в том же порядке, что и маркеры на карте -->
             {% for hall in halls %}
             <li style="margin-top: {{ '0px' if loop.first else '15px' }};">
                 <b>{{ hall.name }}:</b><br>
@@ -170,58 +172,61 @@
             выше, чтобы увидеть расположение зала.</p>
     </div>
 
-
-
-    <!-- Автономный скрипт отображения точек на подложке из базы данных -->
-    <script>
+    <!-- 🟢 ВСТАВЛЯЙТЕ КОД СЮДА (ВМЕСТО СТАРОГО СКРИПТА СИМУЛЯЦИИ) -->
+    <script type="text/javascript">
+        // Сначала передаем данные из Flask
+        var hallsData = {{ halls | tojson }};
         var container = document.getElementById('map-container');
 
-        if (container) {
-            container.style.position = 'relative';
-            container.style.overflow = 'hidden';
+        // Обернем весь код в ymaps.ready, чтобы он ждал загрузки Яндекса
+        if (typeof ymaps !== 'undefined') {
+            ymaps.ready(init);
+        } else {
+            console.error("Библиотека Яндекс Карт не загрузилась. Проверьте тег <script> в <head>.");
+        }
+
+        function init() {
+            if (container && hallsData.length > 0) {
+                var myMap = new ymaps.Map("map-container", {
+                    center: [hallsData[0].lat, hallsData[0].lng],
+                    zoom: 11,
+                    controls: ['zoomControl', 'fullscreenControl']
+                });
+
+                var myCollection = new ymaps.GeoObjectCollection({}, {
+                    preset: 'islands#violetSportIcon'
+                });
+
+                hallsData.forEach(function (hall) {
+                    if (hall.lat && hall.lng) {
+                        var placemark = new ymaps.Placemark(
+                            [hall.lat, hall.lng],
+                            {
+                                balloonContentHeader: '<b style="color: #2c3e50;">' + hall.name + '</b>',
+                                balloonContentBody: '📍 ' + hall.address,
+                                hintContent: hall.name
+                            }
+                        );
+                        myCollection.add(placemark);
+                    }
+                });
+
+                myMap.geoObjects.add(myCollection);
+                myMap.setBounds(myCollection.getBounds(), { checkZoomRange: true, zoomMargin: 50 });
+            } else if (container) {
+                showFallback();
+            }
+        }
+
+        function showFallback() {
             container.style.backgroundColor = "#e5e9f2";
-            container.style.backgroundImage = "linear-gradient(rgba(200, 210, 230, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(200, 210, 230, 0.4) 1px, transparent 1px)";
-            container.style.backgroundSize = "40px 40px";
-
-            var river = document.createElement('div');
-            river.style.position = 'absolute';
-            river.style.width = '100%';
-            river.style.height = '65px';
-            river.style.top = '180px';
-            river.style.backgroundColor = '#7fa1e6';
-            river.style.opacity = '0.7';
-            river.style.zIndex = '1';
-            container.appendChild(river);
-
-            var hallsData = {{ halls| tojson
-        }};
-
-        hallsData.forEach(function (hall, index) {
-            var marker = document.createElement('div');
-            marker.className = 'simulated-marker';
-            marker.style.zIndex = '5';
-
-            var leftPos = 250 + (index * 400);
-            var topPos = 100 + (index * 160);
-
-            marker.style.left = leftPos + 'px';
-            marker.style.top = topPos + 'px';
-
-            var popup = document.createElement('div');
-            popup.className = 'simulated-popup';
-            popup.innerHTML = '<b>' + hall.name + '</b><br>📍 ' + hall.address;
-
-            marker.appendChild(popup);
-
-            marker.onclick = function () {
-                var currentDisplay = popup.style.display;
-                popup.style.display = currentDisplay === 'block' ? 'none' : 'block';
-            };
-
-            container.appendChild(marker);
-        });
+            container.style.display = "flex";
+            container.style.justifyContent = "center";
+            container.style.alignItems = "center";
+            container.innerHTML = "<p style='color:#666; font-family:sans-serif;'>Спортзалы лиги еще не добавлены в базу данных.</p>";
         }
     </script>
+    <!-- 🟢 КОНЕЦ ВСТАВКИ -->
 
 </body>
 
