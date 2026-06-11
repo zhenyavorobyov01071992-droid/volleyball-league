@@ -10,7 +10,6 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 40px;
-            background-color: #f4f4f9;
         }
 
         .header {
@@ -112,10 +111,12 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3">
+
 </head>
 
-<body>
+<body
+    style="background-image: linear-gradient(rgba(244, 246, 249, 0.5), rgba(244, 246, 249, 0.5)), url('/static/bg.jpg') !important; background-attachment: fixed !important; background-size: cover !important; background-position: center !important;">
 
     <!-- Шапка сайта -->
     <div class="header">
