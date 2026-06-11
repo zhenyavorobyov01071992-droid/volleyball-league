@@ -161,21 +161,31 @@
             спортзалов</h4>
         <ul style="padding-left: 20px; margin: 10px 0; font-size: 14px; line-height: 1.6; color: #333;">
             {% for hall in halls %}
-            <li style="margin-top: {{ '0px' if loop.first else '15px' }};">
+            {% if loop.first %}
+            <li style="margin-top: 0px;">
+                {% else %}
+            <li style="margin-top: 15px;">
+                {% endif %}
                 <b>{{ hall.name }}:</b><br>
                 📍 {{ hall.address }}
             </li>
             {% endfor %}
         </ul>
+
         <p style="font-size: 12px; color: #666; margin-top: 15px; font-style: italic;">* Нажмите на маркер на карте
             выше, чтобы увидеть расположение зала.</p>
     </div>
 
     <!-- 🟢 ВСТАВЛЯЙТЕ КОД СЮДА (ВМЕСТО СТАРОГО СКРИПТА СИМУЛЯЦИИ) -->
     <script type="text/javascript">
-        // Сначала передаем данные из Flask
-        var hallsData = {{ halls | tojson }};
+        // Обернули в кавычки, чтобы сделать валидной JS-строкой, и добавили JSON.parse
+        var hallsData = JSON.parse('{{ halls | tojson | safe }}');
         var container = document.getElementById('map-container');
+
+        // Проверяем в консоли браузера, что данные дошли
+        console.log("Данные залов из Flask:", hallsData);
+
+        console.log("Данные залов из Flask:", hallsData);
 
         // Обернем весь код в ymaps.ready, чтобы он ждал загрузки Яндекса
         if (typeof ymaps !== 'undefined') {
@@ -185,9 +195,14 @@
         }
 
         function init() {
-            if (container && hallsData.length > 0) {
+            if (container && hallsData && hallsData.length > 0) {
+                // ВАЖНО: Проверьте, как называются ключи в Python (lat и lng, или lat и long)
+                // По умолчанию в Яндекс.Картах используются lat и long
+                var firstLat = hallsData[0].lat;
+                var firstLng = hallsData[0].lng || hallsData[0].long;
+
                 var myMap = new ymaps.Map("map-container", {
-                    center: [hallsData[0].lat, hallsData[0].lng],
+                    center: [firstLat, firstLng],
                     zoom: 11,
                     controls: ['zoomControl', 'fullscreenControl']
                 });
@@ -197,9 +212,12 @@
                 });
 
                 hallsData.forEach(function (hall) {
-                    if (hall.lat && hall.lng) {
+                    var currentLat = hall.lat;
+                    var currentLng = hall.lng || hall.long;
+
+                    if (currentLat && currentLng) {
                         var placemark = new ymaps.Placemark(
-                            [hall.lat, hall.lng],
+                            [currentLat, currentLng],
                             {
                                 balloonContentHeader: '<b style="color: #2c3e50;">' + hall.name + '</b>',
                                 balloonContentBody: '📍 ' + hall.address,
@@ -211,7 +229,11 @@
                 });
 
                 myMap.geoObjects.add(myCollection);
-                myMap.setBounds(myCollection.getBounds(), { checkZoomRange: true, zoomMargin: 50 });
+
+                // Защита от ошибки, если добавлена всего одна точка
+                if (hallsData.length > 1) {
+                    myMap.setBounds(myCollection.getBounds(), { checkZoomRange: true, zoomMargin: 50 });
+                }
             } else if (container) {
                 showFallback();
             }
@@ -225,6 +247,7 @@
             container.innerHTML = "<p style='color:#666; font-family:sans-serif;'>Спортзалы лиги еще не добавлены в базу данных.</p>";
         }
     </script>
+
     <!-- 🟢 КОНЕЦ ВСТАВКИ -->
 
 </body>
