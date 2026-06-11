@@ -1,4 +1,4 @@
-/* Анимация плавного появления страницы */
+/* 1. ОБЩИЕ СТИЛИ СТРАНИЦЫ И АНИМАЦИЯ ПОЯВЛЕНИЯ */
 @keyframes pageFadeIn {
     from {
         opacity: 0;
@@ -16,9 +16,11 @@ body {
     background-color: #f4f6f9 !important;
     color: #2c3e50 !important;
     animation: pageFadeIn 0.6s ease-out forwards;
+    padding-bottom: 60px !important;
+    /* Оставляем место снизу, чтобы контент не прижимался к краю */
 }
 
-/* Спортивный градиент для шапки */
+/* 2. ШАПКА САЙТА И КНОПКА */
 .header {
     background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%) !important;
     padding: 20px 30px !important;
@@ -26,7 +28,6 @@ body {
     box-shadow: 0 4px 15px rgba(44, 62, 80, 0.15) !important;
 }
 
-/* Кнопка входа */
 .login-btn {
     background: #e74c3c !important;
     padding: 12px 24px !important;
@@ -41,14 +42,13 @@ body {
     transform: translateY(-2px) !important;
 }
 
-/* Заголовок расписания */
 h3 {
     font-weight: 600 !important;
     color: #2c3e50 !important;
     margin-top: 10px !important;
 }
 
-/* Закругления и тени для таблицы из Figma */
+/* 3. ТАБЛИЦА РАСПИСАНИЯ */
 table {
     border-collapse: separate !important;
     border-spacing: 0 !important;
@@ -78,7 +78,6 @@ tr:last-child td {
     border-bottom: none !important;
 }
 
-/* Подсветка строк при наведении мыши */
 tbody tr {
     transition: background-color 0.2s ease !important;
 }
@@ -87,15 +86,53 @@ tbody tr:hover {
     background-color: #f8fafc !important;
 }
 
-/* Оформление карточки залов Rectangle 35 */
-.figma-card {
-    background: #ffffff !important;
-    border: 1px solid #e1e8ed !important;
+/* 4. КОНТЕЙНЕР ЯНДЕКС КАРТЫ */
+#map-container {
+    width: 1386px !important;
+    max-width: 100% !important;
+    margin: 30px auto !important;
+    /* Центрирует карту ровно по центру */
     border-radius: 12px !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05) !important;
-    transition: all 0.3s ease !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+    overflow: hidden !important;
 }
 
+/* 5. НИЖНИЙ КОНТЕЙНЕР ДЛЯ УДЕРЖАНИЯ КАРТОЧКИ ПРИ ЗУМЕ */
+.bottom-content {
+    max-width: 1386px !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    /* Центрирует контейнер, как таблицу и карту */
+    position: relative !important;
+    /* Создает жесткую точку отсчета для карточки */
+}
+
+/* 6. ФИКСАЦИЯ КАРТОЧКИ АДРЕСОВ (Rectangle 35 из Figma) */
+/* 6. ФИКСАЦИЯ КАРТОЧКИ АДРЕСОВ (Rectangle 35 из Figma) */
+.figma-card {
+    width: 340px !important;
+    height: 340px !important;
+    background: #ffffff !important;
+    padding: 25px !important;
+    box-sizing: border-box !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid #e1e8ed !important;
+    transition: all 0.3s ease !important;
+
+    /* ИСПРАВЛЕННОЕ ПОЗИЦИОНИРОВАНИЕ: */
+    position: absolute !important;
+    right: -370px !important;
+    /* Сдвигает карточку вправо за пределы карты */
+    top: -428px !important;
+    /* Поднимает её ровно на высоту карты, ставя на один уровень */
+    /* Слегка приподнимает, чтобы выровнять по нижней линии карты */
+    margin: 0 !important;
+    z-index: 5 !important;
+}
+
+
+/* Эффект плавного подъема при наведении (без прыжков при абсолютном позиционировании) */
 .figma-card:hover {
     transform: translateY(-5px) !important;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
