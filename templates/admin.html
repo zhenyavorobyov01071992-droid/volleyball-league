@@ -147,6 +147,35 @@
         .btn-delete:hover {
             background: #c0392b;
         }
+
+        .score-form {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .score-input {
+            width: 45px !important;
+            padding: 4px !important;
+            text-align: center;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .btn-save-score {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .btn-save-score:hover {
+            background: #27ae60;
+        }
     </style>
 </head>
 
@@ -237,32 +266,53 @@
 
             <!-- Table команд -->
             <div class="table-block">
-                <h3>Список команд лиги</h3>
+                <h3>Результаты и расписание матчей</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Команда</th>
+                            <th>Дата матча</th>
                             <th>Дивизион</th>
-                            <th>Действие</th>
+                            <th>Игра (Хозяева — Гости)</th>
+                            <th>Счет матча</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for team in teams %}
+                        {% for match in matches %}
                         <tr>
-                            <!-- Идеальная нумерация по порядку строк (1, 2, 3...) -->
+                            <!-- 1. Порядковый номер строки (1, 2, 3...) -->
                             <td>{{ loop.index }}</td>
-                            <td>{{ team[1] }}</td>
-                            <td>{{ team[2] }}</td>
+
+                            <!-- 2. Дата матча (Индекс 1) -->
+                            <td style="font-size: 13px;">{{ match[1].strftime('%d.%m %H:%M') if match[1] else '—' }}
+                            </td>
+
+                            <!-- 3. Дивизион (Индекс 5) -->
+                            <td>{{ match[5] }}</td>
+
+                            <!-- 4. Игра (Индексы 2 и 3) -->
+                            <td>{{ match[2] }} — {{ match[3] }}</td>
+
+                            <!-- 5. Форма установки счета (только для админа) -->
                             <td>
-                                <a href="/admin/delete_team/{{ team[0] }}" class="btn-delete"
-                                    onclick="return confirm('Удалить команду?')">Удалить</a>
+                                <form method="POST" action="/admin/update_score" class="score-form">
+                                    <input type="hidden" name="match_id" value="{{ match[0] }}">
+                                    <input type="number" name="score_home" class="score-input" min="0"
+                                        value="{{ match[6] if match[6] is not none else '' }}" placeholder="-">
+                                    <span>:</span>
+                                    <input type="number" name="score_away" class="score-input" min="0"
+                                        value="{{ match[7] if match[7] is not none else '' }}" placeholder="-">
+                                    <button type="submit" class="btn-save-score" title="Сохранить счет">ОК</button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
+
+
                 </table>
             </div>
+
         </div>
     </div>
 

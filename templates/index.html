@@ -133,22 +133,52 @@
             <tr>
                 <th>Дата и время</th>
                 <th>Дивизион</th>
-                <th>Матч</th>
+                <th style="text-align: center;">Матч</th>
                 <th>Спортзал</th>
             </tr>
         </thead>
         <tbody>
             {% for match in matches %}
             <tr>
-                <td>{{ match[1].strftime('%Y-%m-%d %H:%M') if match[1] else '—' }}</td>
-                <!-- МЕНЯЕМ ТУТ: Выводим реальное название дивизиона (6-й элемент из SQL, индекс 5) -->
-                <td>{{ match[5] }}</td>
-                <td>{{ match[2] }} — {{ match[3] }}</td>
-                <td>{{ match[4] }}</td>
+                <!-- 1. Дата и время -->
+                <td style="vertical-align: middle;">{{ match[1].strftime('%Y-%m-%d %H:%M') if match[1] else '—' }}</td>
+
+                <!-- 2. Дивизион -->
+                <td style="vertical-align: middle;">{{ match[5] }}</td>
+
+                <!-- 3. Матч (Идеально ровный Flexbox по центру) -->
+                <td>
+                    <div
+                        style="display: flex; align-items: center; justify-content: center; width: 100%; font-size: 14px;">
+                        <!-- Левая команда (выравнивание по правому краю) -->
+                        <div
+                            style="flex: 1; text-align: right; padding-right: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ match[2] }}
+                        </div>
+
+                        <!-- Счет или VS строго по центру -->
+                        <div
+                            style="background: #f4f6f9; padding: 4px 12px; border-radius: 4px; min-width: 50px; text-align: center; font-weight: bold; color: #2c3e50; border: 1px solid #e2e8f0; font-size: 15px;">
+                            {% if match[6] is not none and match[7] is not none %}
+                            {{ match[6] }} : {{ match[7] }}
+                            {% else %}
+                            <span style="color: #94a3b8; font-size: 13px; font-weight: normal;">vs</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Правая команда (выравнивание по левому краю) -->
+                        <div
+                            style="flex: 1; text-align: left; padding-left: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ match[3] }}
+                        </div>
+                    </div>
+                </td>
+
+                <!-- 4. Спортзал -->
+                <td style="vertical-align: middle;">{{ match[4] }}</td>
             </tr>
             {% endfor %}
         </tbody>
-
     </table>
 
     <!-- Ровно ваш блок Group 2 (Подложка под карту) -->
